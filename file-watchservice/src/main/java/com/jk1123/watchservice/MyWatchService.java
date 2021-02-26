@@ -5,66 +5,6 @@ import java.net.URISyntaxException;
 import java.nio.file.*;
 import java.util.List;
 
-/**
- *
- *  请求注入该模式是有缺陷的:
- *      1.只能监控某目录 子目录的变化无法监控
- *      2.监控之后 文件夹无法改名 操作系统会认为该文件夹被占用
- *
- *      第二个不足可以理解
- *
- *      第一个不足 不行
- *          因为我们项目下通常有很多子目录 无法监控子目录的变化是我们无法接受的
- *
- *          故spring-boot-devtools 没有采用该方式 而是采用定时器遍历的方式
- *          虽然定时器遍历有性能损耗,但是这种功能大多是在代码编辑阶段 损耗可以接受
- *
- *          总结建议还是使用spring-boot-devtools的方式来做
- *
- *      而且windowService 也是调用的一个循环 调用
- *      while(true) {
- *                 CompletionStatus var1;
- *                 try {
- *                     var1 = WindowsNativeDispatcher.GetQueuedCompletionStatus(this.port);
- *                 } catch (WindowsException var8) {
- *                     var8.printStackTrace();
- *                     return;
- *                 }
- *      而WindowsNativeDispatcher.GetQueuedCompletionStatus 调用的是
- *      GetQueuedCompletionStatus0方法
- *      接续调用openjdk-jdk8u-jdk8u\jdk\src\windows\native\sun\nio\fs\WindowsNativeDispatcher.c
- *      JNIEXPORT void JNICALL
- *
- * Java_sun_nio_fs_WindowsNativeDispatcher_GetQueuedCompletionStatus0(JNIEnv* env, jclass this,
- *     jlong completionPort, jobject obj)
- * {
- *     DWORD bytesTransferred;
- *     ULONG_PTR completionKey;
- *     OVERLAPPED *lpOverlapped;
- *     BOOL res;
- *
- *     res = GetQueuedCompletionStatus((HANDLE)jlong_to_ptr(completionPort),
- *                                   &bytesTransferred,
- *                                   &completionKey,
- *                                   &lpOverlapped,
- *                                   INFINITE);
- *     if (res == 0 && lpOverlapped == NULL) {
- *         throwWindowsException(env, GetLastError());
- *     } else {
- *         DWORD ioResult = (res == 0) ? GetLastError() : 0;
- *         (*env)->SetIntField(env, obj, completionStatus_error, ioResult);
- *         (*env)->SetIntField(env, obj, completionStatus_bytesTransferred,
- *             (jint)bytesTransferred);
- *         (*env)->SetLongField(env, obj, completionStatus_completionKey,
- *             (jlong)completionKey);
- *     }
- * }
- *      最终调用了 window操作系统的 GetQueuedCompletionStatus 函数
- *
- *
- *
- *
- */
 public class MyWatchService {
     public static void main(String[] args) throws IOException, URISyntaxException {
 

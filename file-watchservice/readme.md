@@ -1,20 +1,46 @@
+#watchservice实现方案的缺陷
+```text
+该模式是有缺陷的:
+      1.只能监控某目录 子目录的变化无法监控
+      2.监控之后 文件夹无法改名 操作系统会认为该文件夹被占用
+ 
+      第二个不足可以理解
+ 
+      第一个不足 不行
+          因为我们项目下通常有很多子目录 无法监控子目录的变化是我们无法接受的
+ 
+          故spring-boot-devtools 没有采用该方式 而是采用定时器遍历的方式
+          虽然定时器遍历有性能损耗,但是这种功能大多是在代码编辑阶段 损耗可以接受
+ 
+          总结建议还是使用spring-boot-devtools的方式来做
+```
+
+
+
+#watchService基本实现
+无论哪个操作系统都是创建一个AbstractPoller 该对象会循环检查文件io时间
+例如window下就是如下
+```java
+//也是调用的一个循环 调用
+  while(true) {
+             CompletionStatus var1;
+             try {
+                 var1 = WindowsNativeDispatcher.GetQueuedCompletionStatus(this.port);
+             } catch (WindowsException var8) {
+                 var8.printStackTrace();
+                 return;
+             }
+```
+
+
 #关于watchService在windows系统上实现
-```html
-*
- *      而且windowService 也是调用的一个循环 调用
- *      while(true) {
- *                 CompletionStatus var1;
- *                 try {
- *                     var1 = WindowsNativeDispatcher.GetQueuedCompletionStatus(this.port);
- *                 } catch (WindowsException var8) {
- *                     var8.printStackTrace();
- *                     return;
- *                 }
- *      而WindowsNativeDispatcher.GetQueuedCompletionStatus 调用的是
- *      GetQueuedCompletionStatus0方法
- *      接续调用openjdk-jdk8u-jdk8u\jdk\src\windows\native\sun\nio\fs\WindowsNativeDispatcher.c
+  
+  而WindowsNativeDispatcher.GetQueuedCompletionStatus 调用的是
+  GetQueuedCompletionStatus0方法
+  接续调用openjdk-jdk8u-jdk8u\jdk\src\windows\native\sun\nio\fs\WindowsNativeDispatcher.c
+      
+ ```c++
  *      JNIEXPORT void JNICALL
- *
  * Java_sun_nio_fs_WindowsNativeDispatcher_GetQueuedCompletionStatus0(JNIEnv* env, jclass this,
  *     jlong completionPort, jobject obj)
  * {
